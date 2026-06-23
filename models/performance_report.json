@@ -1,0 +1,51 @@
+{
+  "dataset": "Give Me Some Credit (Kaggle) + Loans Full Schema",
+  "training_samples": 119811,
+  "test_samples": 29953,
+  "features": [
+    "revolving_utilization",
+    "debt_ratio",
+    "late_30_59",
+    "late_60_89",
+    "late_90_days",
+    "open_credit_lines",
+    "real_estate_loans",
+    "num_dependents",
+    "income_stability",
+    "gst_compliance_score",
+    "emi_delay_count",
+    "cashflow_stress_ratio",
+    "working_capital_usage",
+    "revenue_trend_index",
+    "payment_history_score",
+    "supplier_payment_risk"
+  ],
+  "baseline_lr": {
+    "auc": 0.7979,
+    "recall": 0.699,
+    "precision": 0.1759
+  },
+  "xgboost": {
+    "auc": 0.8599,
+    "recall": 0.8777,
+    "precision": 0.1506,
+    "f1": 0.2571
+  },
+  "cross_dataset_validation": {
+    "dataset": "loans_full_schema",
+    "auc": 0.449,
+    "recall": 0.5225
+  },
+  "improvement_auc_pts": 6.2,
+  "improvement_recall_pct": 17.87,
+  "top_shap_features": {
+    "revolving_utilization": 0.7244466543197632,
+    "payment_history_score": 0.6381680369377136,
+    "open_credit_lines": 0.17920540273189545,
+    "emi_delay_count": 0.17178033292293549,
+    "income_stability": 0.15139780938625336,
+    "debt_ratio": 0.14641933143138885,
+    "working_capital_usage": 0.136249378323555,
+    "real_estate_loans": 0.11105487495660782
+  }
+}
