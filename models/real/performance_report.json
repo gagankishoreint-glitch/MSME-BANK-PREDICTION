@@ -1,0 +1,9 @@
+{
+  "dataset": "Synthetic credit_risk_dataset (bootstrapped for current lib versions)",
+  "n_train": 25600,
+  "n_test": 6400,
+  "default_rate": 0.2184,
+  "tuned": {
+    "roc_auc": 1.0
+  }
+}

@@ -1,0 +1,1888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IDBI Risk Engine — Credit Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+/* ============================================================
+   DESIGN TOKENS
+   ============================================================ */
+:root {
+  /* Canvas & Surface */
+  --canvas:       #F8FAFC;
+  --surface:      #FFFFFF;
+  --surface-2:    #F1F5F9;
+  --surface-3:    #E2E8F0;
+
+  /* Sidebar / Header authority */
+  --sidebar-bg:   #0F172A;
+  --sidebar-2:    #1E293B;
+  --sidebar-3:    #334155;
+  --sidebar-text: #94A3B8;
+  --sidebar-text-active: #F8FAFC;
+
+  /* Text hierarchy */
+  --text-primary:   #1E293B;
+  --text-secondary: #475569;
+  --text-tertiary:  #94A3B8;
+
+  /* Brand accent */
+  --blue:         #0284C7;
+  --blue-hover:   #0369A1;
+  --blue-pale:    #E0F2FE;
+  --blue-light:   #BAE6FD;
+
+  /* Alert tiers — flat, clean */
+  --critical-text: #DC2626;
+  --critical-bg:   #FEF2F2;
+  --critical-border:#FCA5A5;
+
+  --warning-text:  #D97706;
+  --warning-bg:    #FEF3C7;
+  --warning-border:#FDE68A;
+
+  --safe-text:     #16A34A;
+  --safe-bg:       #DCFCE7;
+  --safe-border:   #BBF7D0;
+
+  --high-text:     #D97706;
+  --high-bg:       #FEF3C7;
+  --high-border:   #FDE68A;
+
+  /* Borders */
+  --border:       #E2E8F0;
+  --border-2:     #CBD5E1;
+
+  /* Shadows */
+  --shadow-sm:    0 1px 3px 0 rgb(0 0 0 / 0.10), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --shadow-md:    0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+
+  /* Radius */
+  --radius-sm:    4px;
+  --radius:       8px;
+  --radius-lg:    12px;
+
+  /* Sidebar width */
+  --sidebar-w:    220px;
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--canvas);
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================================
+   APP SHELL — sidebar + main
+   ============================================================ */
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 40;
+  overflow-y: auto;
+}
+
+/* Logo */
+.sidebar-logo {
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-mark {
+  width: 32px; height: 32px;
+  background: var(--blue);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.5px;
+  flex-shrink: 0;
+}
+
+.logo-text-block { flex: 1; min-width: 0; }
+
+.logo-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sidebar-text-active);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logo-sub {
+  font-size: 10px;
+  color: var(--sidebar-text);
+  margin-top: 1px;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.3px;
+}
+
+/* Nav */
+.sidebar-nav {
+  padding: 12px 10px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.nav-group-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--sidebar-3);
+  padding: 10px 8px 4px;
+  margin-top: 4px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sidebar-text);
+  transition: background 0.1s, color 0.1s;
+  user-select: none;
+}
+
+.nav-item:hover {
+  background: rgba(255,255,255,0.06);
+  color: var(--sidebar-text-active);
+}
+
+.nav-item.active {
+  background: rgba(2,132,199,0.18);
+  color: #38BDF8;
+}
+
+.nav-icon {
+  width: 16px; height: 16px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.nav-badge {
+  margin-left: auto;
+  background: var(--critical-bg);
+  color: var(--critical-text);
+  border: 1px solid var(--critical-border);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Sidebar footer */
+.sidebar-footer {
+  padding: 12px 10px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.model-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-sm);
+}
+
+.model-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #22C55E;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgba(34,197,94,0.2);
+}
+
+.model-pill-text { flex: 1; min-width: 0; }
+.model-pill-name { font-size: 11px; font-weight: 500; color: var(--sidebar-text-active); }
+.model-pill-metric {
+  font-size: 10px;
+  color: var(--sidebar-text);
+  font-family: 'JetBrains Mono', monospace;
+  margin-top: 1px;
+}
+
+/* ============================================================
+   MAIN AREA (offset for sidebar)
+   ============================================================ */
+.main-area {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100vh;
+}
+
+/* ============================================================
+   TOPBAR
+   ============================================================ */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.topbar-left { display: flex; align-items: center; gap: 16px; }
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+.breadcrumb-sep { color: var(--border-2); }
+.breadcrumb-current { color: var(--text-primary); font-weight: 500; }
+
+.topbar-live {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--safe-text);
+  background: var(--safe-bg);
+  border: 1px solid var(--safe-border);
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.topbar-live-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--safe-text);
+}
+
+.topbar-right { display: flex; align-items: center; gap: 8px; }
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 14px;
+  height: 32px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  border: none;
+  transition: background 0.12s, box-shadow 0.12s;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.btn-outline {
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  color: var(--text-secondary);
+}
+
+.btn-outline:hover {
+  background: var(--surface-2);
+  border-color: var(--border-2);
+  color: var(--text-primary);
+}
+
+.btn-primary {
+  background: var(--blue);
+  color: #fff;
+  border: 1px solid var(--blue);
+}
+
+.btn-primary:hover { background: var(--blue-hover); border-color: var(--blue-hover); }
+
+.avatar {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: var(--sidebar-bg);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   PAGE BODY
+   ============================================================ */
+.page-body {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+/* ============================================================
+   METRIC CARDS ROW
+   ============================================================ */
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.metric-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Left accent stripe on card */
+.metric-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+
+.metric-card.blue::before   { background: var(--blue); }
+.metric-card.red::before    { background: var(--critical-text); }
+.metric-card.amber::before  { background: var(--warning-text); }
+.metric-card.green::before  { background: var(--safe-text); }
+
+.metric-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.metric-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: -0.5px;
+}
+
+.metric-value .unit {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0;
+}
+
+.metric-delta {
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 20px;
+}
+
+.metric-delta.neg { background: var(--critical-bg); color: var(--critical-text); }
+.metric-delta.pos { background: var(--safe-bg);     color: var(--safe-text); }
+.metric-delta.neu { background: var(--surface-2);   color: var(--text-tertiary); }
+
+/* ============================================================
+   TWO-COLUMN CONTENT AREA
+   ============================================================ */
+.content-columns {
+  display: grid;
+  grid-template-columns: 1fr 352px;
+  gap: 16px;
+  align-items: start;
+}
+
+/* ============================================================
+   CARD BASE
+   ============================================================ */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.card-sub {
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  margin-top: 1px;
+}
+
+/* ============================================================
+   FILTER / SEARCH BAR
+   ============================================================ */
+.table-controls {
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  padding: 4px 11px;
+  border: 1px solid var(--border-2);
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-secondary);
+  background: var(--surface);
+  transition: all 0.1s;
+  user-select: none;
+}
+
+.filter-chip:hover {
+  background: var(--surface-2);
+  color: var(--text-primary);
+}
+
+.filter-chip.active {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+
+.filter-chip.red.active  { background: var(--critical-bg); border-color: var(--critical-border); color: var(--critical-text); }
+.filter-chip.amber.active{ background: var(--warning-bg);  border-color: var(--warning-border);  color: var(--warning-text); }
+.filter-chip.green.active{ background: var(--safe-bg);     border-color: var(--safe-border);     color: var(--safe-text); }
+
+.search-box {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+}
+
+.search-box input {
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 12.5px;
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  width: 160px;
+}
+
+.search-box input::placeholder { color: var(--text-tertiary); }
+
+/* ============================================================
+   DATA TABLE
+   ============================================================ */
+.data-table { width: 100%; border-collapse: collapse; }
+
+.data-table thead th {
+  padding: 10px 16px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.data-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.08s;
+  position: relative;
+}
+
+.data-table tbody tr:last-child { border-bottom: none; }
+.data-table tbody tr:hover { background: var(--surface-2); }
+
+/* Selected row — matches active dossier */
+.data-table tbody tr.row-active { background: var(--blue-pale); }
+.data-table tbody tr.row-active:hover { background: var(--blue-pale); }
+
+/* Row left border = modernized risk thread */
+.data-table tbody tr td:first-child {
+  border-left: 3px solid transparent;
+}
+
+.data-table tbody tr.risk-critical td:first-child { border-left-color: var(--critical-text); }
+.data-table tbody tr.risk-warning  td:first-child { border-left-color: var(--warning-text);  }
+.data-table tbody tr.risk-safe     td:first-child { border-left-color: var(--safe-text);     }
+.data-table tbody tr.risk-high     td:first-child { border-left-color: #F59E0B;               }
+
+.data-table td {
+  padding: 13px 16px;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.borrower-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.borrower-meta {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.pd-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.pd-value.critical { color: var(--critical-text); }
+.pd-value.high     { color: #F59E0B; }
+.pd-value.warning  { color: var(--warning-text); }
+.pd-value.safe     { color: var(--safe-text); }
+
+/* Score micro-bar */
+.score-bar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.score-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 22px;
+  color: var(--text-secondary);
+}
+
+.score-track {
+  width: 52px;
+  height: 3px;
+  background: var(--surface-3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.score-fill { height: 100%; border-radius: 2px; }
+.score-fill.critical { background: var(--critical-text); }
+.score-fill.high     { background: #F59E0B; }
+.score-fill.warning  { background: var(--warning-text); }
+.score-fill.safe     { background: var(--safe-text); }
+
+/* Risk badge */
+.risk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid;
+  letter-spacing: 0.2px;
+}
+
+.risk-badge::before {
+  content: '';
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.risk-badge.critical { color: var(--critical-text); background: var(--critical-bg); border-color: var(--critical-border); }
+.risk-badge.high     { color: #B45309;               background: var(--warning-bg);  border-color: var(--warning-border); }
+.risk-badge.warning  { color: var(--warning-text);   background: var(--warning-bg);  border-color: var(--warning-border); }
+.risk-badge.safe     { color: var(--safe-text);      background: var(--safe-bg);     border-color: var(--safe-border); }
+
+.currency-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.link-action {
+  font-size: 12px;
+  color: var(--blue);
+  cursor: pointer;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  transition: color 0.1s;
+}
+
+.link-action:hover { color: var(--blue-hover); text-decoration: underline; }
+
+/* Table footer */
+.table-footer {
+  padding: 11px 18px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.table-count { font-size: 12px; color: var(--text-tertiary); }
+
+.pagination { display: flex; align-items: center; gap: 3px; }
+
+.page-btn {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  transition: all 0.1s;
+}
+
+.page-btn:hover { background: var(--surface-2); color: var(--text-primary); }
+.page-btn.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+/* ============================================================
+   MODEL PERF STRIP
+   ============================================================ */
+.perf-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  border-top: 1px solid var(--border);
+}
+
+.perf-cell {
+  padding: 14px 18px;
+  border-right: 1px solid var(--border);
+  text-align: center;
+}
+
+.perf-cell:last-child { border-right: none; }
+
+.perf-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+.perf-val.blue  { color: var(--blue); }
+.perf-val.green { color: var(--safe-text); }
+.perf-val.uplift{ color: var(--safe-text); font-size: 15px; }
+
+.perf-name {
+  font-size: 10.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-tertiary);
+  margin-top: 3px;
+}
+
+/* ============================================================
+   UPLOAD ROW
+   ============================================================ */
+.upload-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.upload-icon {
+  width: 36px; height: 36px;
+  border: 1.5px dashed var(--border-2);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 16px;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: border-color 0.1s, color 0.1s;
+}
+
+.upload-icon:hover { border-color: var(--blue); color: var(--blue); }
+
+.upload-copy { flex: 1; }
+.upload-title { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+.upload-desc  { font-size: 11.5px; color: var(--text-tertiary); margin-top: 1px; }
+
+.col-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 10px 18px 14px;
+}
+
+.col-tag {
+  font-size: 10.5px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-secondary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+
+/* ============================================================
+   RIGHT DOSSIER PANEL
+   ============================================================ */
+.dossier {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Dossier header — dark navy, anchors the panel */
+.dossier-header {
+  background: var(--sidebar-bg);
+  padding: 18px 18px 16px;
+}
+
+.dossier-eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--sidebar-text);
+  margin-bottom: 6px;
+}
+
+.dossier-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: #F8FAFC;
+  line-height: 1.2;
+  margin-bottom: 10px;
+}
+
+.dossier-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+
+.dossier-chip {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--sidebar-text);
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+
+/* PD verdict band */
+.pd-verdict {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: var(--warning-bg);
+  border-bottom: 1px solid var(--warning-border);
+}
+
+.pd-main { }
+.pd-label-small {
+  font-size: 10.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--warning-text);
+  opacity: 0.8;
+  margin-bottom: 2px;
+}
+
+.pd-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--warning-text);
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.pd-trend {
+  font-size: 11.5px;
+  color: var(--warning-text);
+  opacity: 0.8;
+  margin-top: 2px;
+}
+
+.pd-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  background: var(--warning-bg);
+  border: 1.5px solid var(--warning-border);
+  border-radius: var(--radius-sm);
+}
+
+.pd-badge-text {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--warning-text);
+  letter-spacing: 0.5px;
+}
+
+.pd-badge-sub {
+  font-size: 9.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--warning-text);
+  opacity: 0.7;
+}
+
+/* Panel section wrapper */
+.panel-section {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-section:last-of-type { border-bottom: none; }
+
+.panel-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-tertiary);
+  margin-bottom: 10px;
+}
+
+/* PD timeline bars */
+.timeline-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 48px;
+  margin-bottom: 5px;
+}
+
+.t-bar {
+  flex: 1;
+  border-radius: 2px 2px 0 0;
+  min-height: 4px;
+  transition: opacity 0.1s;
+}
+
+.t-bar.observed { opacity: 1; }
+.t-bar.forecast { opacity: 0.35; }
+.t-bar.current  { opacity: 1; outline: 2px solid var(--warning-text); outline-offset: 1px; }
+
+.t-bar.c-safe    { background: var(--safe-text); }
+.t-bar.c-warning { background: var(--warning-text); }
+.t-bar.c-high    { background: #F59E0B; }
+.t-bar.c-critical{ background: var(--critical-text); }
+
+.timeline-months {
+  display: flex;
+  gap: 3px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--text-tertiary);
+}
+
+.timeline-months span { flex: 1; text-align: center; }
+
+.timeline-note {
+  margin-top: 6px;
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+}
+
+/* EL components */
+.el-formula {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-tertiary);
+  margin-bottom: 6px;
+}
+
+.el-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.el-amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--critical-text);
+  letter-spacing: -0.5px;
+}
+
+.el-sub { font-size: 11.5px; color: var(--text-tertiary); }
+
+.el-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.el-box {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.el-box-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.el-box-name {
+  font-size: 9.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+/* SHAP rows */
+.shap-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.shap-row:last-child { border-bottom: none; }
+
+.shap-rank {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-tertiary);
+  min-width: 14px;
+}
+
+.shap-name { font-size: 12px; color: var(--text-secondary); min-width: 118px; }
+
+.shap-track {
+  flex: 1;
+  height: 4px;
+  background: var(--surface-3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.shap-fill { height: 100%; border-radius: 2px; }
+.shap-fill.pos { background: var(--critical-text); }
+.shap-fill.neg { background: var(--safe-text); }
+
+.shap-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  min-width: 40px;
+  text-align: right;
+  font-weight: 500;
+}
+
+.shap-val.pos { color: var(--critical-text); }
+.shap-val.neg { color: var(--safe-text); }
+
+/* Action items */
+.action-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.action-item:last-child { border-bottom: none; }
+
+.action-num {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.action-num.p1 { background: var(--critical-bg); color: var(--critical-text); border: 1px solid var(--critical-border); }
+.action-num.p2 { background: var(--warning-bg);  color: var(--warning-text);  border: 1px solid var(--warning-border); }
+.action-num.p3 { background: var(--blue-pale);   color: var(--blue);          border: 1px solid var(--blue-light); }
+
+.action-content {}
+.action-title { font-size: 12.5px; font-weight: 600; color: var(--text-primary); }
+.action-desc  { font-size: 11.5px; color: var(--text-tertiary); margin-top: 2px; line-height: 1.4; }
+
+/* ============================================================
+   COPILOT
+   ============================================================ */
+.copilot-header {
+  padding: 11px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+}
+
+.copilot-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.copilot-dot {
+  width: 24px; height: 24px;
+  background: var(--blue);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  color: #fff;
+}
+
+.copilot-model-label {
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.copilot-chat {
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--surface);
+}
+
+.chat-msg { display: flex; gap: 8px; align-items: flex-start; }
+.chat-msg.user-msg { flex-direction: row-reverse; }
+
+.chat-avatar {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.chat-avatar.ai   { background: var(--blue); color: #fff; }
+.chat-avatar.user { background: var(--sidebar-bg); color: #fff; }
+
+.chat-bubble {
+  max-width: 86%;
+  padding: 8px 11px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.chat-msg.ai-msg   .chat-bubble { background: var(--surface-2); border: 1px solid var(--border); }
+.chat-msg.user-msg .chat-bubble { background: var(--blue-pale);  border: 1px solid var(--blue-light); color: var(--blue-hover); }
+
+.copilot-input-row {
+  display: flex;
+  border-top: 1px solid var(--border);
+}
+
+.copilot-input-row input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  font-family: 'Inter', sans-serif;
+  color: var(--text-primary);
+  background: var(--surface);
+}
+
+.copilot-input-row input::placeholder { color: var(--text-tertiary); }
+
+.copilot-send {
+  padding: 10px 16px;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  transition: background 0.1s;
+}
+
+.copilot-send:hover { background: var(--blue-hover); }
+
+/* ============================================================
+   STATUS BAR
+   ============================================================ */
+.status-bar {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 8px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.status-live {
+  display: flex; align-items: center; gap: 5px;
+}
+
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--safe-text);
+}
+
+.status-bar-right { margin-left: auto; }
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--canvas); }
+::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-2); }
+
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ======================== SIDEBAR ======================== -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">ID</div>
+      <div class="logo-text-block">
+        <div class="logo-name">IDBI Risk Engine</div>
+        <div class="logo-sub">Credit Intelligence</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Monitor</div>
+
+      <div class="nav-item active">
+        <div class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+          </svg>
+        </div>
+        Portfolio Overview
+      </div>
+
+      <div class="nav-item">
+        <div class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </div>
+        Borrowers
+        <span class="nav-badge">32.5K</span>
+      </div>
+
+      <div class="nav-item">
+        <div class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+            <polyline points="17 6 23 6 23 12"/>
+          </svg>
+        </div>
+        Risk Trends
+      </div>
+
+      <div class="nav-item">
+        <div class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        Early Warnings
+        <span class="nav-badge">14</span>
+      </div>
+
+      <div class="nav-group-label">Analyse</div>
+
+      <div class="nav-item">
+        <div class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </div>
+        SHAP Explainer
+      </div>
+
+      <div class="nav-item">
+        <div class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="20" x2="18" y2="10"/>
+            <line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="14"/>
+          </svg>
+        </div>
+        Model Performance
+      </div>
+
+      <div class="nav-item">
+        <div class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          </svg>
+        </div>
+        Expected Loss
+      </div>
+
+      <div class="nav-group-label">Data</div>
+
+      <div class="nav-item">
+        <div class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        Upload Portfolio
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="model-pill">
+        <div class="model-dot"></div>
+        <div class="model-pill-text">
+          <div class="model-pill-name">XGBoost + NLP</div>
+          <div class="model-pill-metric">AUC 0.969 · 32,581 rec.</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ======================== MAIN ======================== -->
+  <div class="main-area">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="breadcrumb">
+          <span>IDBI Risk Engine</span>
+          <span class="breadcrumb-sep">/</span>
+          <span class="breadcrumb-current">Portfolio Overview</span>
+        </div>
+        <div class="topbar-live">
+          <div class="topbar-live-dot"></div>
+          Live · Updated just now
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <button class="btn btn-outline">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/>
+          </svg>
+          Refresh
+        </button>
+        <button class="btn btn-outline">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Export
+        </button>
+        <button class="btn btn-primary">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          New Simulation
+        </button>
+        <div class="avatar">KS</div>
+      </div>
+    </header>
+
+    <!-- PAGE BODY -->
+    <div class="page-body">
+
+      <!-- METRIC CARDS -->
+      <div class="metrics-row">
+        <div class="metric-card red">
+          <div class="metric-label">Critical Borrowers</div>
+          <div class="metric-value">2,165</div>
+          <div class="metric-delta neg">↑ +142 this month</div>
+        </div>
+        <div class="metric-card amber">
+          <div class="metric-label">Expected Loss</div>
+          <div class="metric-value">₹847 <span class="unit">Cr</span></div>
+          <div class="metric-delta neu">PD × EAD × LGD</div>
+        </div>
+        <div class="metric-card blue">
+          <div class="metric-label">Total Borrowers</div>
+          <div class="metric-value">32,581</div>
+          <div class="metric-delta neu">MSME · Active</div>
+        </div>
+        <div class="metric-card green">
+          <div class="metric-label">Model ROC-AUC</div>
+          <div class="metric-value">0.969</div>
+          <div class="metric-delta pos">↑ +0.014 over structured</div>
+        </div>
+      </div>
+
+      <!-- CONTENT COLUMNS -->
+      <div class="content-columns">
+
+        <!-- LEFT: TABLE + PERF + UPLOAD -->
+        <div style="display:flex;flex-direction:column;gap:16px;">
+
+          <!-- BORROWER TABLE -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Borrower Portfolio</div>
+                <div class="card-sub">Sorted by 12-month PD · XGBoost + NLP hybrid</div>
+              </div>
+              <div style="display:flex;gap:6px;">
+                <button class="btn btn-outline" style="height:28px;font-size:12px;">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="21" y1="6" x2="3" y2="6"/><line x1="15" y1="12" x2="3" y2="12"/><line x1="9" y1="18" x2="3" y2="18"/>
+                  </svg>
+                  Sort
+                </button>
+                <button class="btn btn-outline" style="height:28px;font-size:12px;">Columns</button>
+              </div>
+            </div>
+
+            <!-- Filter / Search -->
+            <div class="table-controls">
+              <span style="font-size:11px;font-weight:500;color:var(--text-tertiary);margin-right:2px;">Filter:</span>
+              <div class="filter-chip active">All</div>
+              <div class="filter-chip red">Critical</div>
+              <div class="filter-chip amber">High Risk</div>
+              <div class="filter-chip">Watch</div>
+              <div class="filter-chip green">Safe</div>
+
+              <div class="search-box">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="text" placeholder="Search borrower or ID…">
+              </div>
+            </div>
+
+            <!-- Table -->
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Borrower</th>
+                  <th>Score</th>
+                  <th>PD (12M)</th>
+                  <th>Exposure</th>
+                  <th>Exp. Loss</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+
+                <tr class="risk-critical">
+                  <td>
+                    <div class="borrower-name">Rajesh Kumar Sharma</div>
+                    <div class="borrower-meta">BRW-001-2024 · Textiles · Mumbai</div>
+                  </td>
+                  <td>
+                    <div class="score-bar">
+                      <span class="score-num" style="color:var(--critical-text)">87</span>
+                      <div class="score-track"><div class="score-fill critical" style="width:87%"></div></div>
+                    </div>
+                  </td>
+                  <td><span class="pd-value critical">78.4%</span></td>
+                  <td><span class="currency-val">₹42.5L</span></td>
+                  <td><span class="currency-val" style="color:var(--critical-text);font-weight:600">₹14.7L</span></td>
+                  <td><span class="risk-badge critical">Critical</span></td>
+                  <td><button class="link-action">Review →</button></td>
+                </tr>
+
+                <tr class="risk-high">
+                  <td>
+                    <div class="borrower-name">Priya Mehta Industries</div>
+                    <div class="borrower-meta">BRW-002-2024 · Manufacturing · Pune</div>
+                  </td>
+                  <td>
+                    <div class="score-bar">
+                      <span class="score-num" style="color:#B45309">71</span>
+                      <div class="score-track"><div class="score-fill high" style="width:71%"></div></div>
+                    </div>
+                  </td>
+                  <td><span class="pd-value high">64.2%</span></td>
+                  <td><span class="currency-val">₹28.0L</span></td>
+                  <td><span class="currency-val" style="color:#B45309;font-weight:600">₹8.2L</span></td>
+                  <td><span class="risk-badge high">High Risk</span></td>
+                  <td><button class="link-action">Review →</button></td>
+                </tr>
+
+                <tr class="risk-warning row-active">
+                  <td>
+                    <div class="borrower-name">Sunil Agarwal Textiles</div>
+                    <div class="borrower-meta">BRW-003-2024 · Textiles · Surat</div>
+                  </td>
+                  <td>
+                    <div class="score-bar">
+                      <span class="score-num" style="color:var(--warning-text)">56</span>
+                      <div class="score-track"><div class="score-fill warning" style="width:56%"></div></div>
+                    </div>
+                  </td>
+                  <td><span class="pd-value warning">47.1%</span></td>
+                  <td><span class="currency-val">₹55.0L</span></td>
+                  <td><span class="currency-val" style="color:var(--warning-text);font-weight:600">₹11.9L</span></td>
+                  <td><span class="risk-badge warning">Watch</span></td>
+                  <td><button class="link-action" style="font-weight:700">Viewing →</button></td>
+                </tr>
+
+                <tr class="risk-warning">
+                  <td>
+                    <div class="borrower-name">Kavitha Constructions</div>
+                    <div class="borrower-meta">BRW-004-2024 · Real Estate · Hyderabad</div>
+                  </td>
+                  <td>
+                    <div class="score-bar">
+                      <span class="score-num" style="color:var(--warning-text)">44</span>
+                      <div class="score-track"><div class="score-fill warning" style="width:44%"></div></div>
+                    </div>
+                  </td>
+                  <td><span class="pd-value warning">33.8%</span></td>
+                  <td><span class="currency-val">₹18.5L</span></td>
+                  <td><span class="currency-val" style="color:var(--warning-text);font-weight:600">₹2.9L</span></td>
+                  <td><span class="risk-badge warning">Watch</span></td>
+                  <td><button class="link-action">Review →</button></td>
+                </tr>
+
+                <tr class="risk-safe">
+                  <td>
+                    <div class="borrower-name">Deepak Pharma Pvt Ltd</div>
+                    <div class="borrower-meta">BRW-005-2024 · Pharmaceuticals · Ahmedabad</div>
+                  </td>
+                  <td>
+                    <div class="score-bar">
+                      <span class="score-num" style="color:var(--safe-text)">18</span>
+                      <div class="score-track"><div class="score-fill safe" style="width:18%"></div></div>
+                    </div>
+                  </td>
+                  <td><span class="pd-value safe">12.3%</span></td>
+                  <td><span class="currency-val">₹71.2L</span></td>
+                  <td><span class="currency-val" style="color:var(--safe-text);font-weight:600">₹4.0L</span></td>
+                  <td><span class="risk-badge safe">Safe</span></td>
+                  <td><button class="link-action">View →</button></td>
+                </tr>
+
+                <tr class="risk-safe">
+                  <td>
+                    <div class="borrower-name">Anita Steel Works</div>
+                    <div class="borrower-meta">BRW-006-2024 · Steel & Metals · Raipur</div>
+                  </td>
+                  <td>
+                    <div class="score-bar">
+                      <span class="score-num" style="color:var(--safe-text)">9</span>
+                      <div class="score-track"><div class="score-fill safe" style="width:9%"></div></div>
+                    </div>
+                  </td>
+                  <td><span class="pd-value safe">6.1%</span></td>
+                  <td><span class="currency-val">₹34.8L</span></td>
+                  <td><span class="currency-val" style="color:var(--safe-text);font-weight:600">₹1.0L</span></td>
+                  <td><span class="risk-badge safe">Safe</span></td>
+                  <td><button class="link-action">View →</button></td>
+                </tr>
+
+              </tbody>
+            </table>
+
+            <!-- Footer -->
+            <div class="table-footer">
+              <div class="table-count">Showing 6 of 32,581 borrowers</div>
+              <div class="pagination">
+                <button class="page-btn">‹</button>
+                <button class="page-btn active">1</button>
+                <button class="page-btn">2</button>
+                <button class="page-btn">3</button>
+                <button class="page-btn">…</button>
+                <button class="page-btn">5431</button>
+                <button class="page-btn">›</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- MODEL PERFORMANCE CARD -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Model Performance</div>
+                <div class="card-sub">XGBoost Hybrid · Optuna-tuned · 32,581 records · 9 features</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--safe-text);background:var(--safe-bg);border:1px solid var(--safe-border);padding:3px 9px;border-radius:20px;font-weight:500;">
+                <div style="width:5px;height:5px;border-radius:50%;background:var(--safe-text);"></div>
+                +0.014 NLP uplift
+              </div>
+            </div>
+            <div class="perf-strip">
+              <div class="perf-cell">
+                <div class="perf-val blue">0.969</div>
+                <div class="perf-name">ROC-AUC</div>
+              </div>
+              <div class="perf-cell">
+                <div class="perf-val green">94%</div>
+                <div class="perf-name">Accuracy</div>
+              </div>
+              <div class="perf-cell">
+                <div class="perf-val">91%</div>
+                <div class="perf-name">Precision</div>
+              </div>
+              <div class="perf-cell">
+                <div class="perf-val">88%</div>
+                <div class="perf-name">Recall</div>
+              </div>
+              <div class="perf-cell">
+                <div class="perf-val uplift">0.955 → 0.969</div>
+                <div class="perf-name">Structured → Hybrid</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- UPLOAD CARD -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Upload Portfolio</div>
+                <div class="card-sub">credit_risk_dataset.csv · 9 required columns</div>
+              </div>
+            </div>
+            <div class="upload-row">
+              <div class="upload-icon">↑</div>
+              <div class="upload-copy">
+                <div class="upload-title">Drop your CSV file here</div>
+                <div class="upload-desc">Or click Browse to select from your system</div>
+              </div>
+              <button class="btn btn-outline">Browse</button>
+              <button class="btn btn-primary">Upload & Predict</button>
+            </div>
+            <div class="col-tags">
+              <span style="font-size:10px;color:var(--text-tertiary);margin-right:4px;align-self:center;font-weight:500;text-transform:uppercase;letter-spacing:0.5px">Required:</span>
+              <span class="col-tag">person_age</span>
+              <span class="col-tag">person_income</span>
+              <span class="col-tag">loan_amnt</span>
+              <span class="col-tag">loan_int_rate</span>
+              <span class="col-tag">loan_percent_income</span>
+              <span class="col-tag">cb_person_cred_hist_length</span>
+              <span class="col-tag">home_ownership</span>
+              <span class="col-tag">loan_intent</span>
+              <span class="col-tag">officer_notes</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT: DOSSIER PANEL -->
+        <div class="dossier">
+
+          <!-- Dark header -->
+          <div class="dossier-header">
+            <div class="dossier-eyebrow">Active Dossier · Under Review</div>
+            <div class="dossier-name">Sunil Agarwal Textiles</div>
+            <div class="dossier-chips">
+              <span class="dossier-chip">BRW-003-2024</span>
+              <span class="dossier-chip">MSME · Textiles</span>
+              <span class="dossier-chip">Surat, Gujarat</span>
+              <span class="dossier-chip">Exposure ₹55L</span>
+            </div>
+          </div>
+
+          <!-- PD verdict -->
+          <div class="pd-verdict">
+            <div class="pd-main">
+              <div class="pd-label-small">12-Month Default Probability</div>
+              <div class="pd-number">47.1%</div>
+              <div class="pd-trend">↑ Trending — intervention advised</div>
+            </div>
+            <div class="pd-badge">
+              <span class="pd-badge-text">WATCH</span>
+              <span class="pd-badge-sub">LIST</span>
+            </div>
+          </div>
+
+          <!-- PD Timeline -->
+          <div class="panel-section">
+            <div class="panel-label">PD Trajectory — Jan to Dec 2025</div>
+            <div class="timeline-bars">
+              <div class="t-bar c-safe   observed" style="height:28%"></div>
+              <div class="t-bar c-safe   observed" style="height:32%"></div>
+              <div class="t-bar c-warning observed" style="height:38%"></div>
+              <div class="t-bar c-warning observed" style="height:42%"></div>
+              <div class="t-bar c-warning observed" style="height:47%"></div>
+              <div class="t-bar c-warning current"  style="height:53%"></div>
+              <div class="t-bar c-high   forecast" style="height:58%"></div>
+              <div class="t-bar c-high   forecast" style="height:64%"></div>
+              <div class="t-bar c-critical forecast" style="height:69%"></div>
+              <div class="t-bar c-critical forecast" style="height:73%"></div>
+              <div class="t-bar c-critical forecast" style="height:77%"></div>
+              <div class="t-bar c-critical forecast" style="height:80%"></div>
+            </div>
+            <div class="timeline-months">
+              <span>J</span><span>F</span><span>M</span><span>A</span>
+              <span>M</span><span>J</span><span>J</span><span>A</span>
+              <span>S</span><span>O</span><span>N</span><span>D</span>
+            </div>
+            <div class="timeline-note">J–Jun: observed · Jul–Dec: model projection (faded)</div>
+          </div>
+
+          <!-- Expected Loss -->
+          <div class="panel-section">
+            <div class="panel-label">Expected Credit Loss</div>
+            <div class="el-formula">EL = PD × EAD × LGD</div>
+            <div class="el-value-row">
+              <div class="el-amount">₹11.9 Lakh</div>
+              <div class="el-sub">at risk horizon</div>
+            </div>
+            <div class="el-grid">
+              <div class="el-box">
+                <div class="el-box-val">47.1%</div>
+                <div class="el-box-name">PD</div>
+              </div>
+              <div class="el-box">
+                <div class="el-box-val">₹55L</div>
+                <div class="el-box-name">EAD</div>
+              </div>
+              <div class="el-box">
+                <div class="el-box-val">46%</div>
+                <div class="el-box-name">LGD</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SHAP -->
+          <div class="panel-section">
+            <div class="panel-label">Risk Drivers — SHAP Attribution</div>
+            <div class="shap-row">
+              <div class="shap-rank">1</div>
+              <div class="shap-name">Loan % of Income</div>
+              <div class="shap-track"><div class="shap-fill pos" style="width:82%"></div></div>
+              <div class="shap-val pos">+0.38</div>
+            </div>
+            <div class="shap-row">
+              <div class="shap-rank">2</div>
+              <div class="shap-name">Credit History Len.</div>
+              <div class="shap-track"><div class="shap-fill pos" style="width:61%"></div></div>
+              <div class="shap-val pos">+0.24</div>
+            </div>
+            <div class="shap-row">
+              <div class="shap-rank">3</div>
+              <div class="shap-name">NLP Stress Index</div>
+              <div class="shap-track"><div class="shap-fill pos" style="width:44%"></div></div>
+              <div class="shap-val pos">+0.18</div>
+            </div>
+            <div class="shap-row">
+              <div class="shap-rank">4</div>
+              <div class="shap-name">Interest Rate</div>
+              <div class="shap-track"><div class="shap-fill pos" style="width:28%"></div></div>
+              <div class="shap-val pos">+0.09</div>
+            </div>
+            <div class="shap-row">
+              <div class="shap-rank">5</div>
+              <div class="shap-name">Home Ownership</div>
+              <div class="shap-track"><div class="shap-fill neg" style="width:35%"></div></div>
+              <div class="shap-val neg">−0.11</div>
+            </div>
+            <div class="shap-row">
+              <div class="shap-rank">6</div>
+              <div class="shap-name">Loan Intent</div>
+              <div class="shap-track"><div class="shap-fill neg" style="width:18%"></div></div>
+              <div class="shap-val neg">−0.05</div>
+            </div>
+          </div>
+
+          <!-- Action Ladder -->
+          <div class="panel-section">
+            <div class="panel-label">Action Escalation</div>
+            <div class="action-item">
+              <div class="action-num p1">1</div>
+              <div class="action-content">
+                <div class="action-title">Schedule RM Call</div>
+                <div class="action-desc">Rising PD demands engagement within 48 hours to assess operational cashflow.</div>
+              </div>
+            </div>
+            <div class="action-item">
+              <div class="action-num p2">2</div>
+              <div class="action-content">
+                <div class="action-title">Initiate Document Refresh</div>
+                <div class="action-desc">Request GST returns and bank statements for trailing 3 months.</div>
+              </div>
+            </div>
+            <div class="action-item">
+              <div class="action-num p3">3</div>
+              <div class="action-content">
+                <div class="action-title">Reassess Collateral</div>
+                <div class="action-desc">Flag for valuation review if PD breaches 55% by Q3 2026.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Copilot -->
+          <div class="copilot-header">
+            <div class="copilot-title">
+              <div class="copilot-dot">✦</div>
+              Risk Copilot
+            </div>
+            <div class="copilot-model-label">claude-opus-4-8</div>
+          </div>
+
+          <div class="copilot-chat">
+            <div class="chat-msg ai-msg">
+              <div class="chat-avatar ai">✦</div>
+              <div class="chat-bubble">Sunil Agarwal Textiles shows an accelerating PD trend — 28% in January, projecting 80% by December. Primary driver is loan-to-income ratio (SHAP +0.38), amplified by elevated NLP stress signals in officer notes. I recommend scheduling an RM call this week.</div>
+            </div>
+            <div class="chat-msg user-msg">
+              <div class="chat-avatar user">KS</div>
+              <div class="chat-bubble">What if we restructure the loan?</div>
+            </div>
+            <div class="chat-msg ai-msg">
+              <div class="chat-avatar ai">✦</div>
+              <div class="chat-bubble">A 30% EMI reduction would lower projected PD to ~34%, reducing EL from ₹11.9L to ~₹8.6L. Net benefit ₹3.3L — viable if RM confirms business continuity.</div>
+            </div>
+          </div>
+
+          <div class="copilot-input-row">
+            <input type="text" placeholder="Ask about this borrower, model output, or portfolio…">
+            <button class="copilot-send">Send →</button>
+          </div>
+
+        </div>
+        <!-- end dossier -->
+
+      </div>
+      <!-- end content-columns -->
+
+    </div>
+    <!-- end page-body -->
+
+    <!-- STATUS BAR -->
+    <div class="status-bar">
+      <div class="status-live">
+        <div class="status-dot"></div>
+        Model live — XGBoost Hybrid
+      </div>
+      <span>Last inference: 14:32:07 IST</span>
+      <span>32,581 records · 9 features (7 structured + 2 NLP)</span>
+      <span>Optuna: 100 trials · Best params loaded</span>
+      <div class="status-bar-right">IDBI Credit Risk Intelligence Engine v2.0 · Track 04</div>
+    </div>
+
+  </div>
+  <!-- end main-area -->
+
+</div>
+<!-- end app-shell -->
+
+</body>
+</html>

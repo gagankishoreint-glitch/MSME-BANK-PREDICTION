@@ -1,56 +1,207 @@
-# IDBI MSME Risk Intelligence Engine
+# 🏦 IDBI Credit Risk Intelligence Engine
 
-An advanced, forward-looking predictive AI engine and early-warning dashboard designed for the IDBI MSME Credit Risk portfolio (Track 04).
+[![CI](https://github.com/kushal040511/IDBI-main/actions/workflows/ci.yml/badge.svg)](https://github.com/kushal040511/IDBI-main/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![XGBoost](https://img.shields.io/badge/XGBoost-ML-EB5E28)](https://xgboost.readthedocs.io/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](#-license)
 
-## 🎯 Problem Statement Alignment (Track 04)
-The current capability for MSME risk prediction relies on fragmented rule-based models yielding only 16-22% accuracy. The expected outcome is to develop a robust predictive solution to identify potential stress in loans **12 months in advance**, improving accuracy/capture rate to **90%**.
+> An **explainable, forward-looking credit-default prediction engine** and early-warning dashboard for MSME lending — *IDBI Track 04: MSME Credit / Predictive AI / Risk Management.*
 
-## 🚀 Solution Architecture
-We shifted the paradigm from retrospective static analysis to **forward-looking behavioral signal monitoring**.
+The platform scores a borrower's **12-month Probability of Default (PD)**, quantifies **Expected Loss (PD × EAD × LGD)**, explains *why* with **SHAP**, and recommends concrete banker interventions — all behind a modern, single-page risk console with an **Agentic Risk Copilot**.
 
-1. **The Data Foundation (Real World Data):**
-   - We abandoned synthetic "perfect" datasets and trained the core model on **150,000 real borrower records** from Kaggle's "Give Me Some Credit" dataset.
-   - We cross-referenced and enriched the data using the comprehensive **Lending Club 2007-2018** data schema (10,000 records subset).
+---
 
-2. **The ML Engine:**
-   - **Legacy Baseline:** A standard Logistic Regression model using 3 classic features (Utilization, DTI, Delinquency) achieved a **69.9% recall** (catch rate).
-   - **XGBoost Engine:** Using 16 highly-tailored MSME behavioral features (GST Compliance Score, EMI Delays, Cashflow Stress Ratio), the XGBoost model achieved **87.8% recall** with an AUC of 0.860.
-   - We successfully bumped the detection rate of actual defaults to near 90%, exactly fulfilling the core challenge requirement.
+## ✨ Highlights
 
-3. **12-Month Forward-Looking Trajectory:**
-   - The model dynamically simulates and predicts the Probability of Default (PD) across a 12-month horizon based on real-time degradation of behavioral signals.
+- 🎯 **Hybrid ML model** — XGBoost on **structured credit features + unstructured officer-notes NLP** (`note_stress_index`), Optuna-tuned, isotonic-calibrated, leak-free CV.
+- 📈 **Held-out ROC-AUC 0.969** (structured-only 0.955 → **+0.014 NLP uplift**), Accuracy 94%, Precision 91%.
+- 🧠 **Full explainability** — per-borrower SHAP attribution translated into plain-English risk drivers.
+- 🔮 **Forward-looking** — simulates a borrower's PD trajectory across a 12-month horizon.
+- 💸 **Banker's-eye financials** — Expected Loss, exposure, LGD, recovery, and a priority **Action Escalation Ladder**.
+- 🤖 **Agentic Risk Copilot** — interactive Q&A on any borrower (Claude → Gemini → offline template fallback).
+- 🖥️ **Modern dashboard** — fully wired SPA: Portfolio Overview, Borrowers, Risk Trends, Early Warnings, SHAP Explainer, Expected Loss, Model Performance, and CSV Upload.
+- ⚡ **Runs instantly** — the trained model ships in `models/real/`; no training step required.
 
-4. **"Banker's View" Dashboard:**
-   - **Agentic Risk Copilot:** Uses SHAP (SHapley Additive exPlanations) to translate complex XGBoost feature weights into plain-English sentences for Bank Managers.
-   - **Financial Impact Mapping:** Calculates real Expected Loss (EL) using the standard banking formula `PD × EAD × LGD`.
-   - **Action Escalation Ladder:** Automatically recommends operational interventions (e.g., "Schedule RM Call", "Initiate Document Review") based on real-time risk banding.
+---
 
-## 🛠️ Technology Stack
-* **Backend:** Python, FastAPI, Uvicorn
-* **Machine Learning:** XGBoost, Scikit-Learn, Pandas, Numpy
-* **Explainability:** SHAP (TreeExplainer)
-* **Frontend:** Vanilla JS, TailwindCSS, Chart.js
+## 🖼️ Dashboard
 
-## ⚙️ How to Run Locally
+The console is a single-page app served by FastAPI. Every sidebar module is live and driven by the backend API.
 
-### 1. Install Dependencies
-Ensure you have Python 3.9+ installed.
+| Module | What it does |
+|---|---|
+| **Portfolio Overview** | Metric cards (critical borrowers, expected loss, total book, ROC-AUC) + sortable borrower table + active borrower **dossier** |
+| **Borrowers** | Full borrower table with filter chips (All / Critical / High / Watch / Safe) and live search |
+| **Risk Trends** | Risk-band distribution + sector risk heatmap (avg PD per sector) |
+| **Early Warnings** | One-click filter to the High + Critical alert queue |
+| **SHAP Explainer** | Ranked, signed SHAP attribution for the selected borrower |
+| **Model Performance** | Visual evaluation report — ROC/PR curves, confusion matrices, score distributions |
+| **Expected Loss** | Portfolio loss rate + Expected Loss by sector (ranked by contribution) |
+| **Upload Portfolio** | Drop a `credit_risk_dataset` CSV → instant scoring of the whole book |
+
+> Model evaluation charts live in [`evaluation_report/`](evaluation_report/) and are served at `/reports/...`
+> (open the **Model Performance** module or visit `/dashboard/evaluation_report.html`).
+
+---
+
+## ⚡ Quickstart
+
 ```bash
-pip install fastapi uvicorn pandas numpy scikit-learn xgboost shap
-```
+# 1. Clone
+git clone https://github.com/kushal040511/IDBI-main.git
+cd IDBI-main
 
-### 2. Run the Server
-Start the FastAPI application via Uvicorn:
-```bash
+# 2. Environment + dependencies
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements-runtime.txt      # minimal, pinned — just enough to serve the app
+# (or: pip install -r requirements.txt        # full set incl. training / NLP / LLM extras)
+brew install libomp                           # macOS only — XGBoost OpenMP runtime
+
+# 3. (Optional) enable the LLM Copilot — else it uses offline templates
+cp .env.example .env                          # add ANTHROPIC_API_KEY or GEMINI_API_KEY
+
+# 4. Run
 uvicorn main:app --reload --port 8000
 ```
 
-### 3. Open the Dashboard
-Navigate your browser to:
-[http://127.0.0.1:8000/dashboard/index.html](http://127.0.0.1:8000/dashboard/index.html)
+Open **http://127.0.0.1:8000/** — it auto-redirects to the dashboard.
 
-## 📁 Repository Structure
-* `main.py` - FastAPI application, backend logic, and dynamic portfolio generation.
-* `train_real_model.py` - ML pipeline script used to train the XGBoost engine on the Give Me Some Credit / Lending Club datasets.
-* `models/` - Serialized Joblib artifacts (XGBoost model, SHAP explainer, Imputer).
-* `static/` - Frontend assets including `index.html`.
+The trained model ships in `models/real/`, so the app runs immediately. To **retrain**, place
+`credit_risk_dataset.csv` in `data/` and run `python train_real_credit_nlp.py` (input datasets are
+gitignored and not committed).
+
+---
+
+## 🧩 API Reference
+
+| Purpose | Endpoint |
+|---|---|
+| Portfolio summary (totals, risk distribution, sector analytics) | `GET /portfolio` |
+| Borrower list (ranked by PD) | `GET /borrowers?limit=50` |
+| Borrower detail — PD, 12-month trajectory, Expected Loss, actions | `GET /borrowers/{id}` |
+| SHAP explainability for a borrower | `GET /borrowers/{id}/explain` |
+| Model metrics | `GET /model-performance` |
+| Upload a portfolio CSV (credit_risk schema) | `POST /upload` |
+| Simulate onboarding new loans | `POST /refresh?count=10` |
+| Restore the demo portfolio | `POST /reset` |
+| Agentic Risk Copilot (Claude / Gemini / template) | `POST /copilot` |
+
+**Copilot engine selection:** `/copilot` auto-detects its backend — `ANTHROPIC_API_KEY` → Claude
+(`claude-opus-4-8`), else `GEMINI_API_KEY` → Gemini, else a fully-offline rule-based template engine.
+No key is required to run the demo.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Backend** | Python 3.11+, FastAPI, Uvicorn |
+| **Machine Learning** | XGBoost, scikit-learn, Optuna, pandas, NumPy |
+| **Explainability** | SHAP (TreeExplainer) |
+| **NLP** | sentence-transformers (officer-notes → `note_stress_index`) |
+| **Frontend** | Single-page HTML/CSS/Vanilla JS, Chart.js |
+| **LLM (optional)** | Anthropic Claude / Google Gemini via `/copilot` |
+
+---
+
+## 🏗️ Architecture
+
+```
+                         ┌──────────────────────────────────────────┐
+   Browser (SPA)         │            FastAPI  (main.py)            │
+ ┌───────────────┐  HTTP │                                          │
+ │ index.html    │◀─────▶│  /portfolio  /borrowers  /borrowers/{id} │
+ │  • sidebar    │  JSON │  /explain  /model-performance  /copilot  │
+ │  • dossier    │       │  /upload  /refresh  /reset               │
+ │  • copilot    │       └───────────────┬──────────────────────────┘
+ └───────────────┘                       │
+        ▲  /dashboard (static)           │ loads at startup
+        │  /reports  (eval charts)       ▼
+                              ┌────────────────────────────┐
+                              │ models/real/               │
+                              │  pipeline.joblib (XGBoost) │
+                              │  calibrator.joblib         │
+                              │  shap_explainer.joblib     │
+                              └────────────────────────────┘
+```
+
+- **`/`** → redirects to `/dashboard/index.html` (the modern console).
+- **`/dashboard`** → static mount serving `static/` (SPA + evaluation report page).
+- **`/reports`** → static mount serving `evaluation_report/` (model charts).
+
+---
+
+## 📁 Project Structure
+
+```
+IDBI-main/
+├── main.py                      # FastAPI app: API, scoring, SHAP, copilot, static mounts
+├── main_msme_backup.py          # MSME variant (GST/EMI/cashflow behavioural features)
+├── nlp_features.py              # officer-notes → note_stress_index (NLP)
+│
+├── train_real_credit_nlp.py     # trainer: structured + unstructured (current model)
+├── train_real_credit.py         # trainer: structured-only baseline
+├── tune_model.py                # Optuna hyperparameter tuning
+├── evaluate_model.py            # held-out evaluation
+├── run_all_models.py            # train/evaluate model zoo
+│
+├── generate_*_data.py           # synthetic data generators (demo / MSME / realistic)
+│
+├── models/
+│   └── real/                    # ✅ shipped model the app loads at startup
+│       ├── pipeline.joblib      #    XGBoost + preprocessing
+│       ├── calibrator.joblib    #    isotonic probability calibration
+│       ├── shap_explainer.joblib
+│       └── performance_report.json
+│
+├── evaluation_report/           # ROC/PR curves, confusion matrices, dashboards (served at /reports)
+│
+├── static/
+│   ├── index.html               # modern single-page dashboard (live-wired)
+│   ├── index-classic.html       # previous dashboard (kept as backup)
+│   └── evaluation_report.html   # model-performance chart gallery
+│
+├── requirements-runtime.txt     # minimal pinned deps to serve the app
+├── requirements.txt             # full deps (training + NLP + LLM)
+└── .env.example                 # Copilot LLM keys (optional)
+```
+
+---
+
+## 🎯 Problem Statement (Track 04)
+
+Existing MSME risk prediction relies on fragmented rule-based models with only **16–22% accuracy**.
+The goal: a robust predictive solution that flags loan stress **12 months in advance** and lifts the
+detection/capture rate toward **90%**. This engine reframes the problem from retrospective static
+scoring to **forward-looking behavioural-signal monitoring**, surfacing early warnings the moment a
+borrower's trajectory bends toward default.
+
+---
+
+## 🔬 Model Notes
+
+- **Data:** `credit_risk_dataset.csv` — 32,581 borrowers, structured credit features + officer-notes NLP.
+- **Pipeline:** preprocessing → XGBoost → isotonic calibration; tuned with Optuna; evaluated on a held-out split with leak-free cross-validation.
+- **Headline:** ROC-AUC **0.969** (structured-only 0.955, **+0.014** from the unstructured NLP signal).
+- **MSME variant:** `main_msme_backup.py` preserves the original GST/EMI/cashflow behavioural framing.
+
+> The model bundled in `models/real/` is regenerated on the current library versions so `joblib`
+> loads cleanly; `GET /model-performance` reports the metrics for the shipped artifact.
+
+---
+
+## 📄 License
+
+Released under the **MIT License** — see below.
+
+```
+MIT License — © 2026 Kushal Mohan
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+and associated documentation files, to deal in the Software without restriction.
+```
+
+---
+
+<p align="center"><i>Built for the IDBI Credit Risk Intelligence challenge — Track 04.</i></p>

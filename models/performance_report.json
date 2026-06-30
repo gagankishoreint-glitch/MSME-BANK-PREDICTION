@@ -1,8 +1,89 @@
 {
-  "dataset": "Give Me Some Credit (Kaggle) + Loans Full Schema",
-  "training_samples": 119811,
-  "test_samples": 29953,
-  "features": [
+  "dataset": "Realistic synthetic MSME (noisy, non-separable) \u2014 data/msme_realistic.csv",
+  "n_train": 21000,
+  "n_test": 9000,
+  "default_rate": 0.1698,
+  "tuning": {
+    "method": "Optuna TPE",
+    "trials": 50,
+    "cv_folds": 3,
+    "best_cv_auc": 0.9387,
+    "best_params": {
+      "n_estimators": 450,
+      "max_depth": 4,
+      "learning_rate": 0.02360164831548943,
+      "subsample": 0.847578337141626,
+      "colsample_bytree": 0.9599895241565151,
+      "min_child_weight": 7,
+      "gamma": 1.1642733242323244,
+      "reg_lambda": 1.0087092227036927,
+      "reg_alpha": 0.061274042395254226,
+      "scale_pos_weight": 2.4712084448226532
+    }
+  },
+  "tuned": {
+    "roc_auc": 0.9339,
+    "pr_auc": 0.8229,
+    "log_loss": 0.238,
+    "log_loss_calibrated": 0.2268,
+    "brier": 0.0689,
+    "brier_calibrated": 0.0629,
+    "at_0.50": {
+      "threshold": 0.5,
+      "accuracy": 0.9098,
+      "precision": 0.7252,
+      "recall": 0.7546,
+      "f1": 0.7396,
+      "confusion_matrix": {
+        "tn": 7035,
+        "fp": 437,
+        "fn": 375,
+        "tp": 1153
+      }
+    },
+    "at_best_f1": {
+      "threshold": 0.6,
+      "accuracy": 0.918,
+      "precision": 0.7825,
+      "recall": 0.716,
+      "f1": 0.7478,
+      "confusion_matrix": {
+        "tn": 7168,
+        "fp": 304,
+        "fn": 434,
+        "tp": 1094
+      }
+    },
+    "at_recall85": {
+      "threshold": 0.28,
+      "accuracy": 0.8672,
+      "precision": 0.5731,
+      "recall": 0.8541,
+      "f1": 0.6859,
+      "confusion_matrix": {
+        "tn": 6500,
+        "fp": 972,
+        "fn": 223,
+        "tp": 1305
+      }
+    }
+  },
+  "ablation_unstructured": {
+    "structured_only_auc": 0.8837,
+    "structured_plus_nlp_auc": 0.9339,
+    "auc_lift_from_unstructured": 0.0502,
+    "structured_only_at_0.50": {
+      "accuracy": 0.8889,
+      "precision": 0.6604,
+      "recall": 0.7114,
+      "f1": 0.6849
+    }
+  },
+  "operating_thresholds": {
+    "best_f1": 0.6,
+    "recall85": 0.28
+  },
+  "features_structured": [
     "revolving_utilization",
     "debt_ratio",
     "late_30_59",
@@ -20,32 +101,26 @@
     "payment_history_score",
     "supplier_payment_risk"
   ],
-  "baseline_lr": {
-    "auc": 0.7979,
-    "recall": 0.699,
-    "precision": 0.1759
-  },
-  "xgboost": {
-    "auc": 0.8599,
-    "recall": 0.8777,
-    "precision": 0.1506,
-    "f1": 0.2571
-  },
-  "cross_dataset_validation": {
-    "dataset": "loans_full_schema",
-    "auc": 0.449,
-    "recall": 0.5225
-  },
-  "improvement_auc_pts": 6.2,
-  "improvement_recall_pct": 17.87,
-  "top_shap_features": {
-    "revolving_utilization": 0.7244466543197632,
-    "payment_history_score": 0.6381680369377136,
-    "open_credit_lines": 0.17920540273189545,
-    "emi_delay_count": 0.17178033292293549,
-    "income_stability": 0.15139780938625336,
-    "debt_ratio": 0.14641933143138885,
-    "working_capital_usage": 0.136249378323555,
-    "real_estate_loans": 0.11105487495660782
-  }
+  "features_unstructured": [
+    "note_stress_index"
+  ],
+  "features": [
+    "revolving_utilization",
+    "debt_ratio",
+    "late_30_59",
+    "late_60_89",
+    "late_90_days",
+    "open_credit_lines",
+    "real_estate_loans",
+    "num_dependents",
+    "income_stability",
+    "gst_compliance_score",
+    "emi_delay_count",
+    "cashflow_stress_ratio",
+    "working_capital_usage",
+    "revenue_trend_index",
+    "payment_history_score",
+    "supplier_payment_risk",
+    "note_stress_index"
+  ]
 }
